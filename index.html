@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROS Cyber Physical System</title>
+    <!-- Include roslibjs library -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .video-container {
+            display: flex;
+            justify-content: space-around;
+        }
+        .video-stream {
+            text-align: center;
+            border: 1px solid #ccc; /* Add border to separate video streams */
+            padding: 10px;
+            margin: 10px;
+        }
+        .video-stream img {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            height: auto;
+        }
+        .controls-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .teleop-controls {
+            display: flex;
+            justify-content: space-around;
+        }
+        button {
+            font-size: 16px;
+            margin: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>ROS Cyber Physical System</h1>
+
+    <!-- Container for video streams -->
+    <div class="video-container">
+        <!-- First video stream -->
+        <div class="video-stream">
+            <h2>Video Stream 1</h2>
+            <img id="videoStream1" src="#" alt="Video Stream 1" width="720" height="480">
+        </div>
+
+        <!-- Second video stream -->
+        <div class="video-stream">
+            <h2>Video Stream 2</h2>
+            <img id="videoStream2" src="#" alt="Video Stream 2" width="720" height="480">
+        </div>
+    </div>
+
+    <!-- Teleop controls -->
+    <div class="controls-container">
+        <h2>Teleop Controls</h2>
+        <div class="teleop-controls">
+            <!-- Teleop controls for the first video stream -->
+            <div>
+                <h3>Video Stream 1</h3>
+                <button onclick="sendTeleopCommand1(1, 0)">Forward</button>
+                <br>
+                <button onclick="sendTeleopCommand1(0, 1)">Turn Left</button>
+                <button onclick="sendTeleopCommand1(0, 0)">Stop</button>
+                <button onclick="sendTeleopCommand1(0, -1)">Turn Right</button>
+                <br>
+                <button onclick="sendTeleopCommand1(-1, 0)">Backward</button>
+            </div>
+
+            <!-- Teleop controls for the second video stream -->
+            <div>
+                <h3>Video Stream 2</h3>
+                <button onclick="sendTeleopCommand2(1, 0)">Forward</button>
+                <br>
+                <button onclick="sendTeleopCommand2(0, 1)">Turn Left</button>
+                <button onclick="sendTeleopCommand2(0, 0)">Stop</button>
+                <button onclick="sendTeleopCommand2(0, -1)">Turn Right</button>
+                <br>
+                <button onclick="sendTeleopCommand2(-1, 0)">Backward</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript code -->
+    <script>
+        var ros = new ROSLIB.Ros({
+            url: 'ws://192.168.21.104:9090'  // Replace with your ROS server IP and port
+        });
+
+        var videoTopic1 = new ROSLIB.Topic({
+            ros: ros,
+            name: '/tb3_0/camera/rgb/image_raw/compressed',  // Replace with your first video topic
+            messageType: 'sensor_msgs/CompressedImage'
+        });
+
+        videoTopic1.subscribe(function (message) {
+            var imageData = "data:image/jpeg;base64," + message.data;
+            document.getElementById('videoStream1').src = imageData;
+        });
+
+        var videoTopic2 = new ROSLIB.Topic({
+            ros: ros,
+            name: '/tb3_1/camera/rgb/image_raw/compressed',  // Replace with your second video topic
+            messageType: 'sensor_msgs/CompressedImage'
+        });
+
+        videoTopic2.subscribe(function (message) {
+            var imageData = "data:image/jpeg;base64," + message.data;
+            document.getElementById('videoStream2').src = imageData;
+        });
+
+        function sendTeleopCommand1(linear, angular) {
+            var twist = new ROSLIB.Message({
+                linear: {
+                    x: linear,
+                    y: 0,
+                    z: 0
+                },
+                angular: {
+                    x: 0,
+                    y: 0,
+                    z: angular
+                }
+            });
+
+            var teleopTopic = new ROSLIB.Topic({
+                ros: ros,
+                name: '/tb3_0/cmd_vel',  // Replace with your teleop topic for video stream 1
+                messageType: 'geometry_msgs/Twist'
+            });
+
+            teleopTopic.publish(twist);
+        }
+
+        function sendTeleopCommand2(linear, angular) {
+            var twist = new ROSLIB.Message({
+                linear: {
+                    x: linear,
+                    y: 0,
+                    z: 0
+                },
+                angular: {
+                    x: 0,
+                    y: 0,
+                    z: angular
+                }
+            });
+
+            var teleopTopic = new ROSLIB.Topic({
+                ros: ros,
+                name: '/tb3_1/cmd_vel',  // Replace with your teleop topic for video stream 2
+                messageType: 'geometry_msgs/Twist'
+            });
+
+            teleopTopic.publish(twist);
+        }
+
+        ros.on('error', function (error) {
+            console.error('Error connecting to ROS:', error);
+        });
+
+        ros.on('close', function () {
+            console.log('Connection to ROS closed.');
+        });
+    </script>
+</body>
+</html>
